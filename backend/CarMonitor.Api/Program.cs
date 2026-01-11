@@ -78,21 +78,21 @@ try
     builder.Services.AddHangfire(config => config.UseMemoryStorage());
     builder.Services.AddHangfireServer();
 
-    // Data layer - use MySQL in production, Excel locally
+    // Data layer - use MySQL in production, InMemory locally
     var connectionString = builder.Configuration.GetConnectionString("MySql");
     if (!string.IsNullOrEmpty(connectionString) && !builder.Environment.IsDevelopment())
     {
         // Production: Use MySQL
         builder.Services.AddDbContext<CarMonitorDbContext>(options =>
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-        builder.Services.AddScoped<IDataService, DbDataService>();
     }
     else
     {
-        // Development: Use Excel file
-        builder.Services.AddSingleton<ExcelDataService>();
-        builder.Services.AddSingleton<IDataService>(sp => sp.GetRequiredService<ExcelDataService>());
+        // Development: Use InMemory database with seed data
+        builder.Services.AddDbContext<CarMonitorDbContext>(options =>
+            options.UseInMemoryDatabase("CarMonitorDev"));
     }
+    builder.Services.AddScoped<IDataService, DbDataService>();
 
     // Services
     builder.Services.AddScoped<AuthService>();
@@ -101,18 +101,20 @@ try
 
     var app = builder.Build();
 
-    // Initialize data layer
-    if (string.IsNullOrEmpty(connectionString) || builder.Environment.IsDevelopment())
+    // Initialize database
+    using (var scope = app.Services.CreateScope())
     {
-        // Force ExcelDataService initialization
-        _ = app.Services.GetRequiredService<ExcelDataService>();
-    }
-    else
-    {
-        // Run migrations for MySQL
-        using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CarMonitorDbContext>();
-        db.Database.Migrate();
+        if (!string.IsNullOrEmpty(connectionString) && !builder.Environment.IsDevelopment())
+        {
+            // Production: Run migrations for MySQL
+            db.Database.Migrate();
+        }
+        else
+        {
+            // Development: Ensure InMemory database is created with seed data
+            db.Database.EnsureCreated();
+        }
     }
 
     // Configure the HTTP request pipeline.
