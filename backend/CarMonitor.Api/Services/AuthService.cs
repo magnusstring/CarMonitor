@@ -8,10 +8,10 @@ namespace CarMonitor.Api.Services;
 
 public class AuthService
 {
-    private readonly ExcelDataService _dataService;
+    private readonly IDataService _dataService;
     private readonly IConfiguration _configuration;
 
-    public AuthService(ExcelDataService dataService, IConfiguration configuration)
+    public AuthService(IDataService dataService, IConfiguration configuration)
     {
         _dataService = dataService;
         _configuration = configuration;

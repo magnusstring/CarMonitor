@@ -10,9 +10,9 @@ namespace CarMonitor.Api.Controllers;
 [Authorize]
 public class ReminderTypesController : ControllerBase
 {
-    private readonly ExcelDataService _dataService;
+    private readonly IDataService _dataService;
 
-    public ReminderTypesController(ExcelDataService dataService)
+    public ReminderTypesController(IDataService dataService)
     {
         _dataService = dataService;
     }

@@ -10,10 +10,10 @@ namespace CarMonitor.Api.Controllers;
 [Authorize]
 public class RemindersController : ControllerBase
 {
-    private readonly ExcelDataService _dataService;
+    private readonly IDataService _dataService;
     private readonly ReminderService _reminderService;
 
-    public RemindersController(ExcelDataService dataService, ReminderService reminderService)
+    public RemindersController(IDataService dataService, ReminderService reminderService)
     {
         _dataService = dataService;
         _reminderService = reminderService;

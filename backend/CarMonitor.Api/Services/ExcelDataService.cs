@@ -3,7 +3,7 @@ using CarMonitor.Api.Models;
 
 namespace CarMonitor.Api.Services;
 
-public class ExcelDataService
+public class ExcelDataService : IDataService
 {
     private readonly string _filePath;
     private readonly object _lock = new();

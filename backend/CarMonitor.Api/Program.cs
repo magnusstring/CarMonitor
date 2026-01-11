@@ -1,8 +1,10 @@
 using System.Text;
+using CarMonitor.Api.Data;
 using CarMonitor.Api.Services;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 try
@@ -76,16 +78,42 @@ try
     builder.Services.AddHangfire(config => config.UseMemoryStorage());
     builder.Services.AddHangfireServer();
 
+    // Data layer - use MySQL in production, Excel locally
+    var connectionString = builder.Configuration.GetConnectionString("MySql");
+    if (!string.IsNullOrEmpty(connectionString) && !builder.Environment.IsDevelopment())
+    {
+        // Production: Use MySQL
+        builder.Services.AddDbContext<CarMonitorDbContext>(options =>
+            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+        builder.Services.AddScoped<IDataService, DbDataService>();
+    }
+    else
+    {
+        // Development: Use Excel file
+        builder.Services.AddSingleton<ExcelDataService>();
+        builder.Services.AddSingleton<IDataService>(sp => sp.GetRequiredService<ExcelDataService>());
+    }
+
     // Services
-    builder.Services.AddSingleton<ExcelDataService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<EmailService>();
     builder.Services.AddScoped<ReminderService>();
 
     var app = builder.Build();
 
-    // Force ExcelDataService initialization
-    _ = app.Services.GetRequiredService<ExcelDataService>();
+    // Initialize data layer
+    if (string.IsNullOrEmpty(connectionString) || builder.Environment.IsDevelopment())
+    {
+        // Force ExcelDataService initialization
+        _ = app.Services.GetRequiredService<ExcelDataService>();
+    }
+    else
+    {
+        // Run migrations for MySQL
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<CarMonitorDbContext>();
+        db.Database.Migrate();
+    }
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
