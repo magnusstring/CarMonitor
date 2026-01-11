@@ -12,7 +12,7 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
   template: `
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">All Reminders</h1>
+        <h1 class="text-2xl font-bold text-white">All Reminders</h1>
         <button (click)="showAddModal.set(true)"
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
           Add Reminder
@@ -20,11 +20,11 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
       </div>
 
       <!-- Filters -->
-      <div class="bg-white shadow rounded-lg p-4 mb-6">
+      <div class="bg-gray-800 shadow rounded-lg p-4 mb-6 border border-gray-700">
         <div class="flex flex-wrap gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select [(ngModel)]="filterStatus" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+            <select [(ngModel)]="filterStatus" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-white">
               <option value="all">All</option>
               <option value="active">Active</option>
               <option value="overdue">Overdue</option>
@@ -32,8 +32,8 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <select [(ngModel)]="filterType" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Type</label>
+            <select [(ngModel)]="filterType" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-sm text-white">
               <option value="all">All Types</option>
               @for (type of reminderTypes(); track type.id) {
                 <option [value]="type.name">{{ type.name }}</option>
@@ -45,30 +45,30 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
 
       @if (loading()) {
         <div class="text-center py-12">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
         </div>
       } @else if (!filteredReminders().length) {
-        <div class="text-center py-12 bg-white rounded-lg shadow">
-          <p class="text-gray-500">No reminders found.</p>
+        <div class="text-center py-12 bg-gray-800 rounded-lg shadow border border-gray-700">
+          <p class="text-gray-400">No reminders found.</p>
         </div>
       } @else {
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul class="divide-y divide-gray-200">
+        <div class="bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-700">
+          <ul class="divide-y divide-gray-700">
             @for (reminder of filteredReminders(); track reminder.id) {
               <li class="px-4 py-4 sm:px-6">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-4">
                     <input type="checkbox" [checked]="reminder.isCompleted"
                            (change)="toggleComplete(reminder)"
-                           class="h-4 w-4 text-indigo-600 rounded border-gray-300">
+                           class="h-4 w-4 text-indigo-600 rounded border-gray-600 bg-gray-700">
                     <app-reminder-icon [type]="reminder.type" [status]="reminder.status"></app-reminder-icon>
-                    <div [class.line-through]="reminder.isCompleted" [class.text-gray-400]="reminder.isCompleted">
-                      <p class="text-sm font-medium text-gray-900">
-                        <a [routerLink]="['/vehicles', reminder.vehicleId]" class="hover:text-indigo-600">
+                    <div [class.line-through]="reminder.isCompleted" [class.text-gray-500]="reminder.isCompleted">
+                      <p class="text-sm font-medium text-white">
+                        <a [routerLink]="['/vehicles', reminder.vehicleId]" class="hover:text-indigo-400">
                           {{ reminder.vehicleName }}
                         </a>
                       </p>
-                      <p class="text-sm text-gray-500">{{ reminder.type }} - Due {{ formatDate(reminder.dueDate) }}</p>
+                      <p class="text-sm text-gray-400">{{ reminder.type }} - Due {{ formatDate(reminder.dueDate) }}</p>
                     </div>
                   </div>
                   <div class="flex items-center space-x-3">
@@ -84,7 +84,7 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
                       }
                     </span>
                     <button (click)="deleteReminder(reminder)"
-                            class="text-red-400 hover:text-red-500 text-sm">
+                            class="text-red-400 hover:text-red-300 text-sm">
                       Delete
                     </button>
                   </div>
@@ -97,15 +97,15 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
 
       <!-- Add Reminder Modal -->
       @if (showAddModal()) {
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Add Reminder</h2>
+        <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-700">
+            <h2 class="text-lg font-medium text-white mb-4">Add Reminder</h2>
 
             <form (ngSubmit)="saveReminder()" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700">Vehicle</label>
+                <label class="block text-sm font-medium text-gray-300">Vehicle</label>
                 <select [(ngModel)]="reminderForm.vehicleId" name="vehicleId" required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                   <option [ngValue]="0" disabled>Select a vehicle</option>
                   @for (v of vehicles(); track v.id) {
                     <option [ngValue]="v.id">{{ v.make }} {{ v.model }} ({{ v.licensePlate }})</option>
@@ -114,9 +114,9 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Type</label>
+                <label class="block text-sm font-medium text-gray-300">Type</label>
                 <select [(ngModel)]="reminderForm.type" name="type" required
-                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                   @for (type of reminderTypes(); track type.id) {
                     <option [value]="type.name">{{ type.name }}</option>
                   }
@@ -124,21 +124,21 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Due Date (DD/MM/YYYY)</label>
+                <label class="block text-sm font-medium text-gray-300">Due Date (DD/MM/YYYY)</label>
                 <input type="text" [(ngModel)]="reminderForm.dueDate" name="dueDate" required
                        placeholder="DD/MM/YYYY" pattern="\\d{2}/\\d{2}/\\d{4}"
-                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                       class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Notes (optional)</label>
+                <label class="block text-sm font-medium text-gray-300">Notes (optional)</label>
                 <textarea [(ngModel)]="reminderForm.notes" name="notes" rows="2"
-                          class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                          class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
               </div>
 
               <div class="flex justify-end space-x-3 pt-4">
                 <button type="button" (click)="closeModal()"
-                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">
                   Cancel
                 </button>
                 <button type="submit" [disabled]="saving() || !reminderForm.vehicleId"
@@ -288,15 +288,15 @@ export class RemindersComponent implements OnInit {
     const base = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
     switch (status) {
       case 'overdue':
-        return `${base} bg-red-100 text-red-800`;
+        return `${base} bg-red-900/50 text-red-400`;
       case 'urgent':
-        return `${base} bg-orange-100 text-orange-800`;
+        return `${base} bg-orange-900/50 text-orange-400`;
       case 'warning':
-        return `${base} bg-yellow-100 text-yellow-800`;
+        return `${base} bg-yellow-900/50 text-yellow-400`;
       case 'completed':
-        return `${base} bg-gray-100 text-gray-800`;
+        return `${base} bg-gray-700 text-gray-300`;
       default:
-        return `${base} bg-green-100 text-green-800`;
+        return `${base} bg-green-900/50 text-green-400`;
     }
   }
 }

@@ -9,15 +9,15 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen flex items-center justify-center bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
       <div class="max-w-md w-full space-y-8">
         <div>
-          <h1 class="text-center text-3xl font-bold text-indigo-600">CarMonitor</h1>
-          <h2 class="mt-6 text-center text-2xl font-semibold text-gray-900">Sign in to your account</h2>
+          <h1 class="text-center text-3xl font-bold text-indigo-400">CarMonitor</h1>
+          <h2 class="mt-6 text-center text-2xl font-semibold text-white">Sign in to your account</h2>
         </div>
 
         @if (error) {
-          <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div class="bg-red-900/50 border border-red-700 text-red-400 px-4 py-3 rounded">
             {{ error }}
           </div>
         }
@@ -25,21 +25,21 @@ import { AuthService } from '../../core/services/auth.service';
         <form class="mt-8 space-y-6" (ngSubmit)="onSubmit()">
           <div class="space-y-4">
             <div>
-              <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+              <label for="username" class="block text-sm font-medium text-gray-300">Username</label>
               <input id="username" name="username" type="text" required
                      [(ngModel)]="username"
-                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                     class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm text-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <div>
-              <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+              <label for="password" class="block text-sm font-medium text-gray-300">Password</label>
               <input id="password" name="password" type="password" required
                      [(ngModel)]="password"
-                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                     class="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm text-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
             </div>
           </div>
 
           <button type="submit" [disabled]="loading"
-                  class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+                  class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500 disabled:opacity-50">
             @if (loading) {
               Signing in...
             } @else {
@@ -47,9 +47,9 @@ import { AuthService } from '../../core/services/auth.service';
             }
           </button>
 
-          <p class="text-center text-sm text-gray-600">
+          <p class="text-center text-sm text-gray-400">
             Don't have an account?
-            <a routerLink="/register" class="font-medium text-indigo-600 hover:text-indigo-500">Register</a>
+            <a routerLink="/register" class="font-medium text-indigo-400 hover:text-indigo-300">Register</a>
           </p>
         </form>
       </div>

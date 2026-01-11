@@ -11,7 +11,7 @@ import { ApiService, Vehicle, CreateVehicleRequest } from '../../core/services/a
   template: `
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Vehicles</h1>
+        <h1 class="text-2xl font-bold text-white">Vehicles</h1>
         <button (click)="showAddModal.set(true)"
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
           Add Vehicle
@@ -20,36 +20,36 @@ import { ApiService, Vehicle, CreateVehicleRequest } from '../../core/services/a
 
       @if (loading()) {
         <div class="text-center py-12">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400"></div>
         </div>
       } @else if (!vehicles().length) {
-        <div class="text-center py-12 bg-white rounded-lg shadow">
-          <p class="text-gray-500">No vehicles yet. Add your first vehicle to get started.</p>
+        <div class="text-center py-12 bg-gray-800 rounded-lg shadow border border-gray-700">
+          <p class="text-gray-400">No vehicles yet. Add your first vehicle to get started.</p>
         </div>
       } @else {
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul class="divide-y divide-gray-200">
+        <div class="bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-700">
+          <ul class="divide-y divide-gray-700">
             @for (vehicle of vehicles(); track vehicle.id) {
               <li>
-                <a [routerLink]="['/vehicles', vehicle.id]" class="block hover:bg-gray-50">
+                <a [routerLink]="['/vehicles', vehicle.id]" class="block hover:bg-gray-700/50">
                   <div class="px-4 py-4 sm:px-6">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                          <span class="text-indigo-600 font-medium">{{ vehicle.make.charAt(0) }}</span>
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-900/50 flex items-center justify-center">
+                          <span class="text-indigo-400 font-medium">{{ vehicle.make.charAt(0) }}</span>
                         </div>
                         <div class="ml-4">
-                          <p class="text-sm font-medium text-indigo-600">{{ vehicle.make }} {{ vehicle.model }}</p>
-                          <p class="text-sm text-gray-500">{{ vehicle.licensePlate }} - {{ vehicle.year }}</p>
+                          <p class="text-sm font-medium text-indigo-400">{{ vehicle.make }} {{ vehicle.model }}</p>
+                          <p class="text-sm text-gray-400">{{ vehicle.licensePlate }} - {{ vehicle.year }}</p>
                         </div>
                       </div>
                       <div class="flex items-center space-x-2">
                         <button (click)="editVehicle(vehicle, $event)"
-                                class="text-gray-400 hover:text-gray-500">
+                                class="text-gray-400 hover:text-gray-300">
                           Edit
                         </button>
                         <button (click)="deleteVehicle(vehicle, $event)"
-                                class="text-red-400 hover:text-red-500">
+                                class="text-red-400 hover:text-red-300">
                           Delete
                         </button>
                       </div>
@@ -64,61 +64,61 @@ import { ApiService, Vehicle, CreateVehicleRequest } from '../../core/services/a
 
       <!-- Add/Edit Modal -->
       @if (showAddModal() || editingVehicle()) {
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">
+        <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-700">
+            <h2 class="text-lg font-medium text-white mb-4">
               {{ editingVehicle() ? 'Edit Vehicle' : 'Add Vehicle' }}
             </h2>
 
             <form (ngSubmit)="saveVehicle()" class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Make</label>
+                  <label class="block text-sm font-medium text-gray-300">Make</label>
                   <input type="text" [(ngModel)]="form.make" name="make" required
-                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Model</label>
+                  <label class="block text-sm font-medium text-gray-300">Model</label>
                   <input type="text" [(ngModel)]="form.model" name="model" required
-                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Year</label>
+                  <label class="block text-sm font-medium text-gray-300">Year</label>
                   <input type="number" [(ngModel)]="form.year" name="year" required
-                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">License Plate</label>
+                  <label class="block text-sm font-medium text-gray-300">License Plate</label>
                   <input type="text" [(ngModel)]="form.licensePlate" name="licensePlate" required
-                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">VIN (optional)</label>
+                <label class="block text-sm font-medium text-gray-300">VIN (optional)</label>
                 <input type="text" [(ngModel)]="form.vin" name="vin" maxlength="17"
-                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                       class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                        placeholder="17-character Vehicle Identification Number">
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Color (optional)</label>
+                <label class="block text-sm font-medium text-gray-300">Color (optional)</label>
                 <input type="text" [(ngModel)]="form.color" name="color"
-                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                       class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700">Notes (optional)</label>
+                <label class="block text-sm font-medium text-gray-300">Notes (optional)</label>
                 <textarea [(ngModel)]="form.notes" name="notes" rows="2"
-                          class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                          class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
               </div>
 
               <div class="flex justify-end space-x-3 pt-4">
                 <button type="button" (click)="closeModal()"
-                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">
                   Cancel
                 </button>
                 <button type="submit" [disabled]="saving()"
