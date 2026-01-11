@@ -6,12 +6,14 @@ public class ReminderService
 {
     private readonly IDataService _dataService;
     private readonly EmailService _emailService;
+    private readonly SmsService _smsService;
     private readonly ILogger<ReminderService> _logger;
 
-    public ReminderService(IDataService dataService, EmailService emailService, ILogger<ReminderService> logger)
+    public ReminderService(IDataService dataService, EmailService emailService, SmsService smsService, ILogger<ReminderService> logger)
     {
         _dataService = dataService;
         _emailService = emailService;
+        _smsService = smsService;
         _logger = logger;
     }
 
@@ -93,6 +95,55 @@ public class ReminderService
                     $"CarMonitor: {reminders.Count} upcoming reminder(s)",
                     html
                 );
+            }
+        }
+    }
+
+    public async Task SendSmsNotifications()
+    {
+        _logger.LogInformation("Running SMS notification job");
+
+        if (!_smsService.IsConfigured)
+        {
+            _logger.LogInformation("Twilio SMS service not configured, skipping");
+            return;
+        }
+
+        var users = _dataService.GetUsersWithSmsEnabled();
+        if (!users.Any())
+        {
+            _logger.LogInformation("No users with SMS notifications enabled");
+            return;
+        }
+
+        var vehicles = _dataService.GetAllVehicles().ToDictionary(v => v.Id);
+        var allReminders = _dataService.GetAllReminders();
+
+        foreach (var user in users)
+        {
+            // Get vehicles owned by this user
+            var userVehicleIds = _dataService.GetVehiclesForUser(user.Id)
+                .Select(v => v.Id)
+                .ToHashSet();
+
+            // Get reminders due tomorrow (1 day before)
+            var tomorrowReminders = allReminders
+                .Where(r => !r.IsCompleted &&
+                            userVehicleIds.Contains(r.VehicleId) &&
+                            (r.DueDate.Date - DateTime.UtcNow.Date).Days == 1)
+                .ToList();
+
+            if (!tomorrowReminders.Any()) continue;
+
+            foreach (var reminder in tomorrowReminders)
+            {
+                var vehicle = vehicles.GetValueOrDefault(reminder.VehicleId);
+                var vehicleName = vehicle != null ? $"{vehicle.Make} {vehicle.Model} ({vehicle.LicensePlate})" : "Unknown";
+
+                var message = $"CarMonitor: {reminder.Type} for {vehicleName} is due tomorrow ({reminder.DueDate:dd/MM/yyyy})";
+
+                await _smsService.SendSmsAsync(user.PhoneNumber!, message);
+                _logger.LogInformation("SMS sent to user {UserId} for reminder {ReminderId}", user.Id, reminder.Id);
             }
         }
     }

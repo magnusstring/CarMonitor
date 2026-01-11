@@ -153,9 +153,29 @@ public class DbDataService : IDataService
         return user;
     }
 
+    public User? UpdateUser(int id, User updated)
+    {
+        var existing = _context.Users.FirstOrDefault(u => u.Id == id);
+        if (existing == null) return null;
+
+        existing.Email = updated.Email;
+        existing.PhoneNumber = updated.PhoneNumber;
+        existing.SmsNotificationsEnabled = updated.SmsNotificationsEnabled;
+
+        _context.SaveChanges();
+        return existing;
+    }
+
     public List<User> GetUsersWithEmail()
     {
         return _context.Users.Where(u => !string.IsNullOrEmpty(u.Email)).ToList();
+    }
+
+    public List<User> GetUsersWithSmsEnabled()
+    {
+        return _context.Users
+            .Where(u => u.SmsNotificationsEnabled && !string.IsNullOrEmpty(u.PhoneNumber))
+            .ToList();
     }
 
     public List<User> GetAllUsers()

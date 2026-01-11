@@ -9,6 +9,15 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
   selector: 'app-vehicle-detail',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, ReminderIconComponent],
+  styles: [`
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
+  `],
   template: `
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="mb-4">
@@ -24,14 +33,33 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
         <div class="bg-gray-800 shadow rounded-lg mb-6 border border-gray-700">
           <div class="px-4 py-5 sm:px-6 border-b border-gray-700">
             <h1 class="text-xl font-bold text-white">{{ vehicle()!.make }} {{ vehicle()!.model }}</h1>
-            <p class="mt-1 text-sm text-gray-400">{{ vehicle()!.licensePlate }} - {{ vehicle()!.year }}</p>
+            <p class="mt-1 text-sm text-gray-400 flex items-center">
+              {{ vehicle()!.licensePlate }}
+              <button (click)="copyToClipboard(vehicle()!.licensePlate)"
+                      class="ml-2 p-1 text-gray-500 hover:text-indigo-400 rounded"
+                      title="Copy license plate">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+              <span class="ml-2">- {{ vehicle()!.year }}</span>
+            </p>
           </div>
           <div class="px-4 py-5 sm:px-6">
             <dl class="grid grid-cols-2 gap-4">
               @if (vehicle()!.vin) {
                 <div>
                   <dt class="text-sm font-medium text-gray-400">VIN</dt>
-                  <dd class="mt-1 text-sm text-white font-mono">{{ vehicle()!.vin }}</dd>
+                  <dd class="mt-1 text-sm text-white font-mono flex items-center">
+                    {{ vehicle()!.vin }}
+                    <button (click)="copyToClipboard(vehicle()!.vin!)"
+                            class="ml-2 p-1 text-gray-500 hover:text-indigo-400 rounded"
+                            title="Copy VIN">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                      </svg>
+                    </button>
+                  </dd>
                 </div>
               }
               @if (vehicle()!.color) {
@@ -140,6 +168,16 @@ import { ReminderIconComponent } from '../../shared/components/reminder-icon.com
         </div>
       }
 
+      <!-- Copy Toast -->
+      @if (copiedText()) {
+        <div class="fixed bottom-4 right-4 bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm flex items-center space-x-2 z-50 animate-fade-in">
+          <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Copied to clipboard</span>
+        </div>
+      }
+
       <!-- Add Reminder Modal -->
       @if (showAddReminder()) {
         <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
@@ -235,6 +273,7 @@ export class VehicleDetailComponent implements OnInit {
   sharing = signal(false);
   shareError = signal('');
   shareUsername = '';
+  copiedText = signal('');
 
   Math = Math;
 
@@ -384,5 +423,11 @@ export class VehicleDetailComponent implements OnInit {
       default:
         return `${base} bg-green-900/50 text-green-400`;
     }
+  }
+
+  copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    this.copiedText.set(text);
+    setTimeout(() => this.copiedText.set(''), 2000);
   }
 }
