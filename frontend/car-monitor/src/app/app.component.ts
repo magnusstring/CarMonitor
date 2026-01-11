@@ -15,7 +15,7 @@ import { AuthService } from './core/services/auth.service';
             <div class="flex justify-between h-16">
               <div class="flex">
                 <div class="flex-shrink-0 flex items-center">
-                  <span class="text-xl font-bold text-indigo-400">CarMonitor</span>
+                  <a routerLink="/dashboard" class="text-xl font-bold text-indigo-400 hover:text-indigo-300">CarMonitor</a>
                 </div>
                 <!-- Desktop menu -->
                 <div class="hidden sm:ml-8 sm:flex sm:space-x-4">
