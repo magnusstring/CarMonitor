@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet new:*)",
+      "Bash(AZ_CMD=\"/c/Program Files/Microsoft SDKs/Azure/CLI2/wbin/az.cmd\")",
+      "Bash(\"$AZ_CMD\" webapp deploy --resource-group carmonitor-rg --name carmonitor-app --src-path \"F:/Code/CarMonitor/backend/CarMonitor.Api/publish.zip\" --type zip)"
+    ]
+  }
+}
