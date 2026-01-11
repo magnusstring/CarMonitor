@@ -1,5 +1,6 @@
 using System.Text;
 using CarMonitor.Api.Data;
+using CarMonitor.Api.Models;
 using CarMonitor.Api.Services;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -145,6 +146,67 @@ try
         // EnsureCreated will create tables if they don't exist (works for both MySQL and InMemory)
         db.Database.EnsureCreated();
         Console.WriteLine($"Database initialized (MySQL: {useMySQL})");
+
+        // Seed demo data only in development
+        if (builder.Environment.IsDevelopment() && !db.Vehicles.Any())
+        {
+            SeedDevelopmentData(db);
+            Console.WriteLine("Development seed data added");
+        }
+    }
+
+    // Seed data for local development only
+    static void SeedDevelopmentData(CarMonitorDbContext db)
+    {
+        var seedDate = DateTime.UtcNow;
+        var today = DateTime.UtcNow.Date;
+
+        // Add demo vehicles
+        var vehicle1 = new Vehicle
+        {
+            UserId = 0,
+            Make = "Volvo",
+            Model = "XC60",
+            Year = 2021,
+            LicensePlate = "ABC 123",
+            Vin = "YV1UZ8256N1234567",
+            Color = "Black",
+            Notes = "Family SUV",
+            CreatedAt = seedDate
+        };
+        var vehicle2 = new Vehicle
+        {
+            UserId = 0,
+            Make = "Tesla",
+            Model = "Model 3",
+            Year = 2023,
+            LicensePlate = "EV 456",
+            Vin = "5YJ3E1EA1NF123456",
+            Color = "White",
+            Notes = "Daily commuter",
+            CreatedAt = seedDate
+        };
+
+        db.Vehicles.AddRange(vehicle1, vehicle2);
+        db.SaveChanges();
+
+        // Add reminders for each vehicle
+        var reminders = new List<Reminder>
+        {
+            // Vehicle 1 reminders
+            new() { VehicleId = vehicle1.Id, Type = "Insurance", DueDate = today.AddDays(-5), Notes = "Annual insurance renewal", IsCompleted = false, CreatedAt = seedDate },
+            new() { VehicleId = vehicle1.Id, Type = "Inspection", DueDate = today.AddDays(10), Notes = "Yearly inspection", IsCompleted = false, CreatedAt = seedDate },
+            new() { VehicleId = vehicle1.Id, Type = "RoadTax", DueDate = today.AddDays(45), Notes = "Road tax due", IsCompleted = false, CreatedAt = seedDate },
+            new() { VehicleId = vehicle1.Id, Type = "Service", DueDate = today.AddDays(90), Notes = "30,000 km service", IsCompleted = false, CreatedAt = seedDate },
+            // Vehicle 2 reminders
+            new() { VehicleId = vehicle2.Id, Type = "Insurance", DueDate = today.AddDays(3), Notes = "Insurance expires soon", IsCompleted = false, CreatedAt = seedDate },
+            new() { VehicleId = vehicle2.Id, Type = "Inspection", DueDate = today.AddDays(-10), Notes = "Overdue inspection!", IsCompleted = false, CreatedAt = seedDate },
+            new() { VehicleId = vehicle2.Id, Type = "RoadTax", DueDate = today.AddDays(120), Notes = "Quarterly road tax", IsCompleted = false, CreatedAt = seedDate },
+            new() { VehicleId = vehicle2.Id, Type = "Service", DueDate = today.AddDays(25), Notes = "Tire rotation", IsCompleted = false, CreatedAt = seedDate }
+        };
+
+        db.Reminders.AddRange(reminders);
+        db.SaveChanges();
     }
 
     // Configure the HTTP request pipeline.

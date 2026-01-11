@@ -87,7 +87,7 @@ public class CarMonitorDbContext : DbContext
             entity.Property(e => e.IsDefault).HasColumnName("is_default");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
 
-            // Seed default reminder types
+            // Seed default reminder types (needed for both dev and prod)
             entity.HasData(
                 new ReminderTypeEntity { Id = 1, Name = "Insurance", Icon = "insurance", Color = "#3b82f6", IsDefault = true, CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
                 new ReminderTypeEntity { Id = 2, Name = "Inspection", Icon = "inspection", Color = "#10b981", IsDefault = true, CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) },
@@ -95,70 +95,5 @@ public class CarMonitorDbContext : DbContext
                 new ReminderTypeEntity { Id = 4, Name = "Service", Icon = "service", Color = "#8b5cf6", IsDefault = true, CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
             );
         });
-
-        SeedDevelopmentData(modelBuilder);
-    }
-
-    private void SeedDevelopmentData(ModelBuilder modelBuilder)
-    {
-        var seedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        // Seed a demo user (password: "demo123")
-        modelBuilder.Entity<User>().HasData(
-            new User
-            {
-                Id = 1,
-                Username = "demo",
-                PasswordHash = "$2a$11$K5xKz5K5xKz5K5xKz5K5xOdemo123hashedpassword",
-                Email = "demo@example.com",
-                CreatedAt = seedDate
-            }
-        );
-
-        // Seed 2 vehicles
-        modelBuilder.Entity<Vehicle>().HasData(
-            new Vehicle
-            {
-                Id = 1,
-                UserId = 0, // Shared with all users
-                Make = "Volvo",
-                Model = "XC60",
-                Year = 2021,
-                LicensePlate = "ABC 123",
-                Vin = "YV1UZ8256N1234567",
-                Color = "Black",
-                Notes = "Family SUV",
-                CreatedAt = seedDate
-            },
-            new Vehicle
-            {
-                Id = 2,
-                UserId = 0,
-                Make = "Tesla",
-                Model = "Model 3",
-                Year = 2023,
-                LicensePlate = "EV 456",
-                Vin = "5YJ3E1EA1NF123456",
-                Color = "White",
-                Notes = "Daily commuter",
-                CreatedAt = seedDate
-            }
-        );
-
-        // Seed 4 reminders for each vehicle with varied dates
-        var today = DateTime.UtcNow.Date;
-        modelBuilder.Entity<Reminder>().HasData(
-            // Vehicle 1 reminders
-            new Reminder { Id = 1, VehicleId = 1, Type = "Insurance", DueDate = today.AddDays(-5), Notes = "Annual insurance renewal", IsCompleted = false, CreatedAt = seedDate },
-            new Reminder { Id = 2, VehicleId = 1, Type = "Inspection", DueDate = today.AddDays(10), Notes = "Yearly inspection", IsCompleted = false, CreatedAt = seedDate },
-            new Reminder { Id = 3, VehicleId = 1, Type = "RoadTax", DueDate = today.AddDays(45), Notes = "Road tax due", IsCompleted = false, CreatedAt = seedDate },
-            new Reminder { Id = 4, VehicleId = 1, Type = "Service", DueDate = today.AddDays(90), Notes = "30,000 km service", IsCompleted = false, CreatedAt = seedDate },
-
-            // Vehicle 2 reminders
-            new Reminder { Id = 5, VehicleId = 2, Type = "Insurance", DueDate = today.AddDays(3), Notes = "Insurance expires soon", IsCompleted = false, CreatedAt = seedDate },
-            new Reminder { Id = 6, VehicleId = 2, Type = "Inspection", DueDate = today.AddDays(-10), Notes = "Overdue inspection!", IsCompleted = false, CreatedAt = seedDate },
-            new Reminder { Id = 7, VehicleId = 2, Type = "RoadTax", DueDate = today.AddDays(120), Notes = "Quarterly road tax", IsCompleted = false, CreatedAt = seedDate },
-            new Reminder { Id = 8, VehicleId = 2, Type = "Service", DueDate = today.AddDays(25), Notes = "Tire rotation", IsCompleted = false, CreatedAt = seedDate }
-        );
     }
 }
