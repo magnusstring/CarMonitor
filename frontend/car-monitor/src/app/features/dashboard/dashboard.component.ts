@@ -161,19 +161,27 @@ export class DashboardComponent implements OnInit {
 
   loadDashboard() {
     this.loading.set(true);
+    // Load dashboard stats
     this.api.getDashboard().subscribe({
       next: (data) => {
         this.dashboard.set(data);
-        // Combine overdue and upcoming, sort by date
-        const all = [
-          ...(data.overdueReminders || []),
-          ...(data.upcomingReminders || [])
-        ].sort((a, b) => a.daysUntilDue - b.daysUntilDue);
-        this.allReminders.set(all);
-        this.loading.set(false);
       },
       error: (err) => {
         this.error.set('Failed to load dashboard');
+        this.loading.set(false);
+      }
+    });
+    // Load all reminders
+    this.api.getReminders().subscribe({
+      next: (reminders) => {
+        // Filter out completed, sort by date
+        const active = reminders
+          .filter(r => !r.isCompleted)
+          .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+        this.allReminders.set(active);
+        this.loading.set(false);
+      },
+      error: () => {
         this.loading.set(false);
       }
     });
