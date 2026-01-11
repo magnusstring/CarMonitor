@@ -1,25 +1,26 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { ApiService, Vehicle, Reminder, CreateVehicleRequest } from '../../core/services/api.service';
+import { ApiService, Vehicle, Reminder, CreateVehicleRequest, ReminderType, CreateReminderRequest } from '../../core/services/api.service';
 import { ReminderIconComponent } from '../../shared/components/reminder-icon.component';
 import { forkJoin } from 'rxjs';
 
 interface VehicleWithReminders extends Vehicle {
   reminders: Reminder[];
   expanded: boolean;
+  imageUrl: string;
 }
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ReminderIconComponent],
+  imports: [CommonModule, FormsModule, ReminderIconComponent],
   template: `
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <!-- Header -->
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-white">My Vehicles</h1>
-        <button (click)="showAddVehicle.set(true)"
+        <button (click)="openAddVehicle()"
                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -39,106 +40,123 @@ interface VehicleWithReminders extends Vehicle {
         </div>
       } @else if (!vehicles().length) {
         <div class="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-          <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          <svg class="mx-auto h-16 w-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h8m-8 4h8m-4 4v3m-6 0h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-white">No vehicles</h3>
-          <p class="mt-1 text-sm text-gray-400">Get started by adding your first vehicle.</p>
-          <button (click)="showAddVehicle.set(true)"
-                  class="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-            Add Vehicle
+          <h3 class="mt-4 text-lg font-medium text-white">No vehicles yet</h3>
+          <p class="mt-2 text-sm text-gray-400">Add your first vehicle to start tracking reminders.</p>
+          <button (click)="openAddVehicle()"
+                  class="mt-6 inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+            Add Your First Vehicle
           </button>
         </div>
       } @else {
-        <div class="space-y-4">
+        <!-- Vehicle Cards -->
+        <div class="space-y-6">
           @for (vehicle of vehicles(); track vehicle.id) {
-            <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-              <!-- Vehicle Header -->
-              <div class="px-4 py-4 sm:px-6 cursor-pointer hover:bg-gray-750"
-                   (click)="toggleVehicle(vehicle)">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-3">
-                    <svg class="w-5 h-5 text-gray-400 transition-transform"
-                         [class.rotate-90]="vehicle.expanded"
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                    </svg>
+            <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+              <!-- Vehicle Header with Image -->
+              <div class="flex">
+                <!-- Car Image -->
+                <div class="w-48 h-32 flex-shrink-0 bg-gray-900 flex items-center justify-center overflow-hidden">
+                  <img [src]="vehicle.imageUrl"
+                       [alt]="vehicle.make + ' ' + vehicle.model"
+                       class="w-full h-full object-contain"
+                       (error)="onImageError($event)">
+                </div>
+
+                <!-- Vehicle Info -->
+                <div class="flex-1 p-4">
+                  <div class="flex items-start justify-between">
                     <div>
-                      <h3 class="text-lg font-medium text-white">
+                      <h3 class="text-xl font-semibold text-white">
                         {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}
                       </h3>
-                      <p class="text-sm text-gray-400">{{ vehicle.licensePlate }}</p>
+                      <div class="mt-1 space-y-0.5">
+                        <p class="text-sm text-gray-400">{{ vehicle.licensePlate }}</p>
+                        @if (vehicle.vin) {
+                          <p class="text-xs text-gray-500 font-mono">VIN: {{ vehicle.vin }}</p>
+                        }
+                      </div>
                     </div>
-                  </div>
-                  <div class="flex items-center space-x-4">
-                    @if (getOverdueCount(vehicle) > 0) {
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/50 text-red-400">
-                        {{ getOverdueCount(vehicle) }} overdue
-                      </span>
-                    }
-                    @if (getUpcomingCount(vehicle) > 0) {
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900/50 text-yellow-400">
-                        {{ getUpcomingCount(vehicle) }} upcoming
-                      </span>
-                    }
-                    <span class="text-sm text-gray-500">{{ vehicle.reminders.length }} reminders</span>
+                    <div class="flex items-center space-x-2">
+                      @if (getOverdueCount(vehicle) > 0) {
+                        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-red-900/50 text-red-400">
+                          {{ getOverdueCount(vehicle) }} overdue
+                        </span>
+                      }
+                      <button (click)="openAddReminder(vehicle)"
+                              class="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-700 rounded-lg"
+                              title="Add reminder">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                      </button>
+                      <button (click)="toggleVehicle(vehicle)"
+                              class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg">
+                        <svg class="w-5 h-5 transition-transform" [class.rotate-180]="vehicle.expanded" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Reminders List -->
+              <!-- Reminders Section (Expandable) -->
               @if (vehicle.expanded) {
                 <div class="border-t border-gray-700">
                   @if (!vehicle.reminders.length) {
-                    <div class="px-6 py-4 text-center text-gray-400">
-                      No reminders for this vehicle.
-                      <a [routerLink]="['/vehicles', vehicle.id]" class="text-indigo-400 hover:text-indigo-300 ml-1">Add one</a>
+                    <div class="px-6 py-8 text-center">
+                      <p class="text-gray-400">No upcoming reminders</p>
+                      <button (click)="openAddReminder(vehicle)"
+                              class="mt-3 text-sm text-indigo-400 hover:text-indigo-300">
+                        + Add a reminder
+                      </button>
                     </div>
                   } @else {
-                    <ul class="divide-y divide-gray-700">
+                    <div class="divide-y divide-gray-700">
                       @for (reminder of vehicle.reminders; track reminder.id) {
-                        <li class="px-6 py-3 hover:bg-gray-750">
-                          <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                              <app-reminder-icon [type]="reminder.type" [status]="reminder.status"></app-reminder-icon>
-                              <div>
-                                <p class="text-sm font-medium text-white">{{ reminder.type }}</p>
-                                <p class="text-sm text-gray-400">Due {{ formatDate(reminder.dueDate) }}</p>
-                                @if (reminder.notes) {
-                                  <p class="text-xs text-gray-500 mt-1">{{ reminder.notes }}</p>
-                                }
-                              </div>
-                            </div>
-                            <div class="flex items-center space-x-3">
-                              <span [class]="getStatusClass(reminder.status)">
-                                @if (reminder.daysUntilDue < 0) {
-                                  {{ Math.abs(reminder.daysUntilDue) }}d overdue
-                                } @else if (reminder.daysUntilDue === 0) {
-                                  Due today
-                                } @else if (reminder.daysUntilDue === 1) {
-                                  Due tomorrow
-                                } @else {
-                                  {{ reminder.daysUntilDue }} days
-                                }
-                              </span>
-                              <button (click)="openRenewModal(reminder); $event.stopPropagation()"
-                                      class="px-3 py-1 text-sm font-medium text-indigo-400 hover:text-indigo-300 border border-indigo-400 hover:border-indigo-300 rounded-md">
-                                Renew
-                              </button>
+                        <div class="px-6 py-3 flex items-center justify-between hover:bg-gray-750">
+                          <div class="flex items-center space-x-4">
+                            <app-reminder-icon [type]="reminder.type" [status]="reminder.status"></app-reminder-icon>
+                            <div>
+                              <p class="text-sm font-medium text-white">{{ reminder.type }}</p>
+                              <p class="text-xs text-gray-400">{{ formatDate(reminder.dueDate) }}</p>
                             </div>
                           </div>
-                        </li>
+                          <div class="flex items-center space-x-3">
+                            <span [class]="getStatusClass(reminder.status)">
+                              @if (reminder.daysUntilDue < 0) {
+                                {{ Math.abs(reminder.daysUntilDue) }}d overdue
+                              } @else if (reminder.daysUntilDue === 0) {
+                                Today
+                              } @else {
+                                {{ reminder.daysUntilDue }}d
+                              }
+                            </span>
+                            <button (click)="openRenewModal(reminder)"
+                                    class="px-3 py-1 text-xs font-medium text-indigo-400 hover:text-indigo-300 border border-indigo-500/50 hover:border-indigo-400 rounded">
+                              Renew
+                            </button>
+                          </div>
+                        </div>
                       }
-                    </ul>
+                    </div>
                   }
-                  <div class="px-6 py-3 bg-gray-850 border-t border-gray-700">
-                    <a [routerLink]="['/vehicles', vehicle.id]"
-                       class="text-sm text-indigo-400 hover:text-indigo-300">
-                      View vehicle details
-                    </a>
-                  </div>
                 </div>
               }
+            </div>
+          }
+        </div>
+
+        <!-- Reminder Type Quick Stats -->
+        <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          @for (type of reminderTypes(); track type.id) {
+            <div class="bg-gray-800/50 rounded-lg border border-gray-700/50 p-3 text-center">
+              <app-reminder-icon [type]="type.name" status="ok" class="mx-auto"></app-reminder-icon>
+              <p class="mt-2 text-sm font-medium text-white">{{ type.name }}</p>
+              <p class="text-xs text-gray-400">{{ getReminderCountByType(type.name) }} active</p>
             </div>
           }
         </div>
@@ -146,71 +164,85 @@ interface VehicleWithReminders extends Vehicle {
 
       <!-- Add Vehicle Modal -->
       @if (showAddVehicle()) {
-        <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div class="bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 border border-gray-700">
-            <h2 class="text-lg font-medium text-white mb-4">Add New Vehicle</h2>
-
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" (click)="showAddVehicle.set(false)">
+          <div class="bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full p-6 border border-gray-700" (click)="$event.stopPropagation()">
+            <h2 class="text-xl font-semibold text-white mb-6">Add Vehicle</h2>
             <form (ngSubmit)="submitVehicle()" class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-300">Make</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Make</label>
                   <input type="text" [(ngModel)]="vehicleForm.make" name="make" required
-                         placeholder="e.g. Toyota"
-                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         placeholder="Toyota" class="input-field">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-300">Model</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Model</label>
                   <input type="text" [(ngModel)]="vehicleForm.model" name="model" required
-                         placeholder="e.g. Camry"
-                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         placeholder="Camry" class="input-field">
                 </div>
               </div>
-
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-300">Year</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Year</label>
                   <input type="number" [(ngModel)]="vehicleForm.year" name="year" required
-                         placeholder="e.g. 2023"
-                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         placeholder="2023" class="input-field">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-300">License Plate</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">License Plate</label>
                   <input type="text" [(ngModel)]="vehicleForm.licensePlate" name="licensePlate" required
-                         placeholder="e.g. ABC 123"
-                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         placeholder="ABC 123" class="input-field">
                 </div>
               </div>
-
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-300">Color (optional)</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Color</label>
                   <input type="text" [(ngModel)]="vehicleForm.color" name="color"
-                         placeholder="e.g. Black"
-                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         placeholder="Black" class="input-field">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-300">VIN (optional)</label>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">VIN</label>
                   <input type="text" [(ngModel)]="vehicleForm.vin" name="vin"
-                         placeholder="17 characters"
-                         class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                         placeholder="Optional" class="input-field">
                 </div>
               </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-300">Notes (optional)</label>
-                <textarea [(ngModel)]="vehicleForm.notes" name="notes" rows="2"
-                          placeholder="Any additional notes..."
-                          class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-              </div>
-
               <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" (click)="showAddVehicle.set(false)"
-                        class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">
-                  Cancel
+                <button type="button" (click)="showAddVehicle.set(false)" class="btn-secondary">Cancel</button>
+                <button type="submit" [disabled]="saving()" class="btn-primary">
+                  {{ saving() ? 'Adding...' : 'Add Vehicle' }}
                 </button>
-                <button type="submit" [disabled]="saving()"
-                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
-                  {{ saving() ? 'Saving...' : 'Add Vehicle' }}
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Add Reminder Modal -->
+      @if (showAddReminder()) {
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" (click)="showAddReminder.set(false)">
+          <div class="bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-700" (click)="$event.stopPropagation()">
+            <h2 class="text-xl font-semibold text-white mb-2">Add Reminder</h2>
+            <p class="text-sm text-gray-400 mb-6">{{ selectedVehicle()?.make }} {{ selectedVehicle()?.model }}</p>
+            <form (ngSubmit)="submitReminder()" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Type</label>
+                <select [(ngModel)]="reminderForm.type" name="type" required class="input-field">
+                  @for (type of reminderTypes(); track type.id) {
+                    <option [value]="type.name">{{ type.name }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Due Date</label>
+                <input type="date" [(ngModel)]="reminderForm.dueDate" name="dueDate" required class="input-field">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                <input type="text" [(ngModel)]="reminderForm.notes" name="notes"
+                       placeholder="Optional notes" class="input-field">
+              </div>
+              <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" (click)="showAddReminder.set(false)" class="btn-secondary">Cancel</button>
+                <button type="submit" [disabled]="saving()" class="btn-primary">
+                  {{ saving() ? 'Adding...' : 'Add Reminder' }}
                 </button>
               </div>
             </form>
@@ -220,33 +252,23 @@ interface VehicleWithReminders extends Vehicle {
 
       <!-- Renew Modal -->
       @if (renewingReminder()) {
-        <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-700">
-            <h2 class="text-lg font-medium text-white mb-4">Renew {{ renewingReminder()!.type }}</h2>
-            <p class="text-sm text-gray-400 mb-4">{{ renewingReminder()!.vehicleName }}</p>
-
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50" (click)="closeRenewModal()">
+          <div class="bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-700" (click)="$event.stopPropagation()">
+            <h2 class="text-xl font-semibold text-white mb-2">Renew {{ renewingReminder()!.type }}</h2>
+            <p class="text-sm text-gray-400 mb-6">{{ renewingReminder()!.vehicleName }}</p>
             <form (ngSubmit)="submitRenew()" class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-300">New Due Date (DD/MM/YYYY)</label>
-                <input type="text" [(ngModel)]="renewForm.dueDate" name="dueDate" required
-                       placeholder="DD/MM/YYYY" pattern="\\d{2}/\\d{2}/\\d{4}"
-                       class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <label class="block text-sm font-medium text-gray-300 mb-1">New Due Date</label>
+                <input type="date" [(ngModel)]="renewForm.dueDate" name="dueDate" required class="input-field">
               </div>
-
               <div>
-                <label class="block text-sm font-medium text-gray-300">Note (optional)</label>
-                <textarea [(ngModel)]="renewForm.notes" name="notes" rows="2"
-                          placeholder="Add a note about this renewal..."
-                          class="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Note</label>
+                <input type="text" [(ngModel)]="renewForm.notes" name="notes"
+                       placeholder="Optional" class="input-field">
               </div>
-
               <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" (click)="closeRenewModal()"
-                        class="px-4 py-2 border border-gray-600 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700">
-                  Cancel
-                </button>
-                <button type="submit" [disabled]="saving()"
-                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
+                <button type="button" (click)="closeRenewModal()" class="btn-secondary">Cancel</button>
+                <button type="submit" [disabled]="saving()" class="btn-primary">
                   {{ saving() ? 'Saving...' : 'Renew' }}
                 </button>
               </div>
@@ -258,16 +280,28 @@ interface VehicleWithReminders extends Vehicle {
   `,
   styles: [`
     .bg-gray-750 { background-color: rgb(38, 42, 51); }
-    .bg-gray-850 { background-color: rgb(24, 28, 35); }
+    .input-field {
+      @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm;
+    }
+    .btn-primary {
+      @apply px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors;
+    }
+    .btn-secondary {
+      @apply px-4 py-2 border border-gray-600 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
   private api = inject(ApiService);
 
   vehicles = signal<VehicleWithReminders[]>([]);
+  reminderTypes = signal<ReminderType[]>([]);
+  allReminders = signal<Reminder[]>([]);
   loading = signal(true);
   error = signal('');
   showAddVehicle = signal(false);
+  showAddReminder = signal(false);
+  selectedVehicle = signal<Vehicle | null>(null);
   renewingReminder = signal<Reminder | null>(null);
   saving = signal(false);
 
@@ -281,12 +315,22 @@ export class DashboardComponent implements OnInit {
     notes: ''
   };
 
+  reminderForm = {
+    type: '',
+    dueDate: '',
+    notes: ''
+  };
+
   renewForm = {
     dueDate: '',
     notes: ''
   };
 
   Math = Math;
+
+  // IMAGIN.studio API for car images (free key from JS Mastery)
+  private readonly CAR_IMAGE_API = 'https://cdn.imagin.studio/getimage';
+  private readonly CAR_IMAGE_KEY = 'hrjavascript-mastery';
 
   ngOnInit() {
     this.loadData();
@@ -296,23 +340,25 @@ export class DashboardComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
 
-    // Load vehicles and all reminders
     forkJoin({
       vehicles: this.api.getVehicles(),
-      reminders: this.api.getReminders()
+      reminders: this.api.getReminders(),
+      types: this.api.getReminderTypes()
     }).subscribe({
-      next: ({ vehicles, reminders }) => {
+      next: ({ vehicles, reminders, types }) => {
         const twoYearsFromNow = new Date();
         twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2);
 
-        // Filter reminders to next 2 years and not completed
+        // Filter reminders
         const filteredReminders = reminders.filter(r => {
           if (r.isCompleted) return false;
           const dueDate = new Date(r.dueDate);
           return dueDate <= twoYearsFromNow;
         });
 
-        // Group reminders by vehicle
+        this.allReminders.set(filteredReminders);
+
+        // Group by vehicle
         const remindersByVehicle = new Map<number, Reminder[]>();
         filteredReminders.forEach(r => {
           const list = remindersByVehicle.get(r.vehicleId) || [];
@@ -320,14 +366,21 @@ export class DashboardComponent implements OnInit {
           remindersByVehicle.set(r.vehicleId, list);
         });
 
-        // Create vehicles with reminders
+        // Create vehicles with reminders and images
         const vehiclesWithReminders: VehicleWithReminders[] = vehicles.map(v => ({
           ...v,
           reminders: (remindersByVehicle.get(v.id) || []).sort((a, b) => a.daysUntilDue - b.daysUntilDue),
-          expanded: true // Start expanded
+          expanded: true,
+          imageUrl: this.getCarImageUrl(v.make, v.model, v.year, v.color)
         }));
 
         this.vehicles.set(vehiclesWithReminders);
+        this.reminderTypes.set(types);
+
+        if (types.length && !this.reminderForm.type) {
+          this.reminderForm.type = types[0].name;
+        }
+
         this.loading.set(false);
       },
       error: () => {
@@ -335,6 +388,33 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  getCarImageUrl(make: string, model: string, year: number, color?: string): string {
+    const params = new URLSearchParams({
+      customer: this.CAR_IMAGE_KEY,
+      make: make.toLowerCase(),
+      modelFamily: model.toLowerCase().split(' ')[0],
+      zoomType: 'fullscreen',
+      modelYear: year.toString(),
+      angle: '23'
+    });
+    if (color) {
+      params.set('paintId', color.toLowerCase());
+    }
+    return `${this.CAR_IMAGE_API}?${params.toString()}`;
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    img.src = 'data:image/svg+xml,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" fill="none">
+        <rect width="200" height="120" fill="#1f2937"/>
+        <path d="M60 80h80M70 70h60M50 60c0-20 20-30 50-30s50 10 50 30" stroke="#4b5563" stroke-width="2" fill="none"/>
+        <circle cx="70" cy="80" r="10" stroke="#4b5563" stroke-width="2"/>
+        <circle cx="130" cy="80" r="10" stroke="#4b5563" stroke-width="2"/>
+      </svg>
+    `);
   }
 
   toggleVehicle(vehicle: VehicleWithReminders) {
@@ -345,8 +425,31 @@ export class DashboardComponent implements OnInit {
     return vehicle.reminders.filter(r => r.status === 'overdue').length;
   }
 
-  getUpcomingCount(vehicle: VehicleWithReminders): number {
-    return vehicle.reminders.filter(r => r.status === 'urgent' || r.status === 'warning').length;
+  getReminderCountByType(type: string): number {
+    return this.allReminders().filter(r => r.type === type).length;
+  }
+
+  openAddVehicle() {
+    this.vehicleForm = {
+      make: '',
+      model: '',
+      year: new Date().getFullYear(),
+      licensePlate: '',
+      color: '',
+      vin: '',
+      notes: ''
+    };
+    this.showAddVehicle.set(true);
+  }
+
+  openAddReminder(vehicle: Vehicle) {
+    this.selectedVehicle.set(vehicle);
+    this.reminderForm = {
+      type: this.reminderTypes()[0]?.name || '',
+      dueDate: '',
+      notes: ''
+    };
+    this.showAddReminder.set(true);
   }
 
   submitVehicle() {
@@ -355,15 +458,28 @@ export class DashboardComponent implements OnInit {
       next: () => {
         this.showAddVehicle.set(false);
         this.saving.set(false);
-        this.vehicleForm = {
-          make: '',
-          model: '',
-          year: new Date().getFullYear(),
-          licensePlate: '',
-          color: '',
-          vin: '',
-          notes: ''
-        };
+        this.loadData();
+      },
+      error: () => this.saving.set(false)
+    });
+  }
+
+  submitReminder() {
+    const vehicle = this.selectedVehicle();
+    if (!vehicle) return;
+
+    this.saving.set(true);
+    const request: CreateReminderRequest = {
+      vehicleId: vehicle.id,
+      type: this.reminderForm.type,
+      dueDate: this.reminderForm.dueDate,
+      notes: this.reminderForm.notes
+    };
+
+    this.api.createReminder(request).subscribe({
+      next: () => {
+        this.showAddReminder.set(false);
+        this.saving.set(false);
         this.loadData();
       },
       error: () => this.saving.set(false)
@@ -372,10 +488,7 @@ export class DashboardComponent implements OnInit {
 
   openRenewModal(reminder: Reminder) {
     this.renewingReminder.set(reminder);
-    this.renewForm = {
-      dueDate: '',
-      notes: ''
-    };
+    this.renewForm = { dueDate: '', notes: '' };
   }
 
   closeRenewModal() {
@@ -388,11 +501,8 @@ export class DashboardComponent implements OnInit {
     if (!reminder) return;
 
     this.saving.set(true);
-
-    const isoDate = this.parseEuropeanDate(this.renewForm.dueDate);
-
     this.api.updateReminder(reminder.id, {
-      dueDate: isoDate,
+      dueDate: this.renewForm.dueDate,
       notes: this.renewForm.notes || reminder.notes || '',
       isCompleted: false
     }).subscribe({
@@ -404,14 +514,6 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  parseEuropeanDate(dateStr: string): string {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-    return dateStr;
-  }
-
   formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('en-GB', {
       day: 'numeric',
@@ -421,18 +523,12 @@ export class DashboardComponent implements OnInit {
   }
 
   getStatusClass(status: string): string {
-    const base = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
+    const base = 'px-2 py-0.5 rounded text-xs font-medium';
     switch (status) {
-      case 'overdue':
-        return `${base} bg-red-900/50 text-red-400`;
-      case 'urgent':
-        return `${base} bg-orange-900/50 text-orange-400`;
-      case 'warning':
-        return `${base} bg-yellow-900/50 text-yellow-400`;
-      case 'completed':
-        return `${base} bg-gray-700 text-gray-300`;
-      default:
-        return `${base} bg-green-900/50 text-green-400`;
+      case 'overdue': return `${base} bg-red-900/50 text-red-400`;
+      case 'urgent': return `${base} bg-orange-900/50 text-orange-400`;
+      case 'warning': return `${base} bg-yellow-900/50 text-yellow-400`;
+      default: return `${base} bg-green-900/50 text-green-400`;
     }
   }
 }
