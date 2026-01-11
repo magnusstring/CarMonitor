@@ -80,6 +80,17 @@ try
 
     // Data layer - use MySQL in production, InMemory locally
     var connectionString = builder.Configuration.GetConnectionString("MySql");
+
+    // Check for Azure MySQL in App (MYSQLCONNSTR_localdb)
+    var mysqlInAppConnStr = Environment.GetEnvironmentVariable("MYSQLCONNSTR_localdb");
+    if (!string.IsNullOrEmpty(mysqlInAppConnStr))
+    {
+        // Parse MySQL in App connection string format:
+        // Database=localdb;Data Source=127.0.0.1:PORT;User Id=azure;Password=PASSWORD
+        connectionString = ConvertMySqlInAppConnectionString(mysqlInAppConnStr);
+        Console.WriteLine("Using MySQL in App database");
+    }
+
     if (!string.IsNullOrEmpty(connectionString) && !builder.Environment.IsDevelopment())
     {
         // Production: Use MySQL
@@ -94,6 +105,31 @@ try
     }
     builder.Services.AddScoped<IDataService, DbDataService>();
 
+    // Helper function to convert MySQL in App connection string to Pomelo format
+    static string ConvertMySqlInAppConnectionString(string connStr)
+    {
+        // Input: Database=localdb;Data Source=127.0.0.1:PORT;User Id=azure;Password=PASSWORD
+        // Output: Server=127.0.0.1;Port=PORT;Database=localdb;User=azure;Password=PASSWORD
+        var parts = connStr.Split(';')
+            .Select(p => p.Trim())
+            .Where(p => !string.IsNullOrEmpty(p))
+            .Select(p => p.Split('=', 2))
+            .Where(p => p.Length == 2)
+            .ToDictionary(p => p[0].Trim(), p => p[1].Trim(), StringComparer.OrdinalIgnoreCase);
+
+        var database = parts.GetValueOrDefault("Database", "localdb");
+        var dataSource = parts.GetValueOrDefault("Data Source", "127.0.0.1:3306");
+        var userId = parts.GetValueOrDefault("User Id", "azure");
+        var password = parts.GetValueOrDefault("Password", "");
+
+        // Parse Data Source (127.0.0.1:PORT)
+        var hostParts = dataSource.Split(':');
+        var server = hostParts[0];
+        var port = hostParts.Length > 1 ? hostParts[1] : "3306";
+
+        return $"Server={server};Port={port};Database={database};User={userId};Password={password};";
+    }
+
     // Services
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<EmailService>();
@@ -102,19 +138,13 @@ try
     var app = builder.Build();
 
     // Initialize database
+    var useMySQL = !string.IsNullOrEmpty(connectionString) && !builder.Environment.IsDevelopment();
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<CarMonitorDbContext>();
-        if (!string.IsNullOrEmpty(connectionString) && !builder.Environment.IsDevelopment())
-        {
-            // Production: Run migrations for MySQL
-            db.Database.Migrate();
-        }
-        else
-        {
-            // Development: Ensure InMemory database is created with seed data
-            db.Database.EnsureCreated();
-        }
+        // EnsureCreated will create tables if they don't exist (works for both MySQL and InMemory)
+        db.Database.EnsureCreated();
+        Console.WriteLine($"Database initialized (MySQL: {useMySQL})");
     }
 
     // Configure the HTTP request pipeline.
