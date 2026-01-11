@@ -40,7 +40,8 @@ public class AuthService
         {
             Username = request.Username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-            Email = request.Email
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber
         };
 
         _dataService.CreateUser(user);

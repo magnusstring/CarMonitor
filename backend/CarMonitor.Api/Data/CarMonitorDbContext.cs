@@ -28,6 +28,8 @@ public class CarMonitorDbContext : DbContext
             entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(100).IsRequired();
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(255).IsRequired();
             entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
+            entity.Property(e => e.PhoneNumber).HasColumnName("phone_number").HasMaxLength(20);
+            entity.Property(e => e.SmsNotificationsEnabled).HasColumnName("sms_notifications_enabled");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.HasIndex(e => e.Username).IsUnique();
         });

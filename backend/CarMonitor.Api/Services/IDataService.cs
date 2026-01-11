@@ -25,7 +25,9 @@ public interface IDataService
     User? GetUserByUsername(string username);
     User? GetUserById(int id);
     User CreateUser(User user);
+    User? UpdateUser(int id, User updated);
     List<User> GetUsersWithEmail();
+    List<User> GetUsersWithSmsEnabled();
     List<User> GetAllUsers();
 
     // ReminderType operations

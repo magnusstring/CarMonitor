@@ -6,6 +6,8 @@ public class User
     public string Username { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string? Email { get; set; }
+    public string? PhoneNumber { get; set; }
+    public bool SmsNotificationsEnabled { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
@@ -27,4 +29,5 @@ public class RegisterRequest
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string? Email { get; set; }
+    public string? PhoneNumber { get; set; }
 }
