@@ -73,9 +73,27 @@ interface VehicleWithReminders extends Vehicle {
                         {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}
                       </h3>
                       <div class="mt-1 space-y-0.5">
-                        <p class="text-sm text-gray-400">{{ vehicle.licensePlate }}</p>
+                        <p class="text-sm text-gray-400 flex items-center">
+                          {{ vehicle.licensePlate }}
+                          <button (click)="copyToClipboard(vehicle.licensePlate)"
+                                  class="ml-2 p-1 text-gray-500 hover:text-indigo-400 rounded"
+                                  title="Copy license plate">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                          </button>
+                        </p>
                         @if (vehicle.vin) {
-                          <p class="text-xs text-gray-500 font-mono">VIN: {{ vehicle.vin }}</p>
+                          <p class="text-xs text-gray-500 font-mono flex items-center">
+                            VIN: {{ vehicle.vin }}
+                            <button (click)="copyToClipboard(vehicle.vin!)"
+                                    class="ml-2 p-1 text-gray-500 hover:text-indigo-400 rounded"
+                                    title="Copy VIN">
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                              </svg>
+                            </button>
+                          </p>
                         }
                       </div>
                     </div>
@@ -179,6 +197,16 @@ interface VehicleWithReminders extends Vehicle {
               <p class="text-xs text-gray-500">rarom.ro</p>
             </a>
           </div>
+        </div>
+      }
+
+      <!-- Copy Toast -->
+      @if (copiedText()) {
+        <div class="fixed bottom-4 right-4 bg-gray-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm flex items-center space-x-2 z-50 animate-fade-in">
+          <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span>Copied to clipboard</span>
         </div>
       }
 
@@ -309,6 +337,13 @@ interface VehicleWithReminders extends Vehicle {
     .btn-secondary {
       @apply px-4 py-2 border border-gray-600 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors;
     }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
@@ -324,6 +359,7 @@ export class DashboardComponent implements OnInit {
   selectedVehicle = signal<Vehicle | null>(null);
   renewingReminder = signal<Reminder | null>(null);
   saving = signal(false);
+  copiedText = signal('');
 
   vehicleForm: CreateVehicleRequest = {
     make: '',
@@ -546,5 +582,11 @@ export class DashboardComponent implements OnInit {
       case 'warning': return `${base} bg-yellow-900/50 text-yellow-400`;
       default: return `${base} bg-green-900/50 text-green-400`;
     }
+  }
+
+  copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    this.copiedText.set(text);
+    setTimeout(() => this.copiedText.set(''), 2000);
   }
 }
