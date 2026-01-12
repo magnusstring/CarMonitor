@@ -5,10 +5,10 @@ namespace CarMonitor.Api.Services;
 public class ReminderService
 {
     private readonly IDataService _dataService;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<ReminderService> _logger;
 
-    public ReminderService(IDataService dataService, EmailService emailService, ILogger<ReminderService> logger)
+    public ReminderService(IDataService dataService, IEmailService emailService, ILogger<ReminderService> logger)
     {
         _dataService = dataService;
         _emailService = emailService;

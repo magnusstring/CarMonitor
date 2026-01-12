@@ -148,8 +148,8 @@ public class RemindersControllerTests : IClassFixture<CustomWebApplicationFactor
         });
         var reminder = await createResponse.Content.ReadFromJsonAsync<Reminder>();
 
-        // Act
-        var response = await client.PostAsync($"/api/reminders/{reminder!.Id}/complete", null);
+        // Act - Use PATCH method as defined in the controller
+        var response = await client.PatchAsync($"/api/reminders/{reminder!.Id}/complete", null);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

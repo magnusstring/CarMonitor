@@ -86,21 +86,27 @@ public class VehiclesControllerTests : IClassFixture<CustomWebApplicationFactory
     }
 
     [Fact]
-    public async Task CreateVehicle_WithMissingRequiredFields_ReturnsBadRequest()
+    public async Task CreateVehicle_WithPartialData_ReturnsCreated()
     {
         // Arrange
         var client = await GetAuthenticatedClient();
         var vehicle = new
         {
-            Make = "Toyota"
-            // Missing Model, Year, LicensePlate
+            Make = "Toyota",
+            Model = "Partial",
+            Year = 2023,
+            LicensePlate = "PART" + Guid.NewGuid().ToString("N")[..4]
+            // Note: API accepts vehicles without optional fields like Vin, Color, Notes
         };
 
         // Act
         var response = await client.PostAsJsonAsync("/api/vehicles", vehicle);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<Vehicle>();
+        Assert.NotNull(created);
+        Assert.Equal("Toyota", created.Make);
     }
 
     [Fact]

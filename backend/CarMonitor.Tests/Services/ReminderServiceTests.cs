@@ -8,14 +8,14 @@ namespace CarMonitor.Tests.Services;
 public class ReminderServiceTests
 {
     private readonly Mock<IDataService> _dataServiceMock;
-    private readonly Mock<EmailService> _emailServiceMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<ILogger<ReminderService>> _loggerMock;
     private readonly ReminderService _reminderService;
 
     public ReminderServiceTests()
     {
         _dataServiceMock = new Mock<IDataService>();
-        _emailServiceMock = new Mock<EmailService>();
+        _emailServiceMock = new Mock<IEmailService>();
         _loggerMock = new Mock<ILogger<ReminderService>>();
         _reminderService = new ReminderService(
             _dataServiceMock.Object,

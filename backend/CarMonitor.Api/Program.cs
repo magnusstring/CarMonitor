@@ -133,7 +133,7 @@ try
 
     // Services
     builder.Services.AddScoped<AuthService>();
-    builder.Services.AddScoped<EmailService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<ReminderService>();
 
     var app = builder.Build();
@@ -251,15 +251,18 @@ try
 
     Console.WriteLine("Starting CarMonitor...");
 
-    // Schedule daily reminder email job after app starts
-    app.Lifetime.ApplicationStarted.Register(() =>
+    // Schedule daily reminder email job after app starts (skip in Testing environment)
+    if (!app.Environment.IsEnvironment("Testing"))
     {
-        RecurringJob.AddOrUpdate<ReminderService>(
-            "daily-reminder-emails",
-            service => service.SendDailyReminderEmails(),
-            Cron.Daily(8, 0) // Run at 8:00 AM daily
-        );
-    });
+        app.Lifetime.ApplicationStarted.Register(() =>
+        {
+            RecurringJob.AddOrUpdate<ReminderService>(
+                "daily-reminder-emails",
+                service => service.SendDailyReminderEmails(),
+                Cron.Daily(8, 0) // Run at 8:00 AM daily
+            );
+        });
+    }
 
     app.Run();
 }

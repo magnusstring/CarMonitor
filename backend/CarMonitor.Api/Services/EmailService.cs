@@ -4,7 +4,12 @@ using MimeKit;
 
 namespace CarMonitor.Api.Services;
 
-public class EmailService
+public interface IEmailService
+{
+    Task SendEmailAsync(string to, string subject, string htmlBody);
+}
+
+public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
