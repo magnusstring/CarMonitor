@@ -131,6 +131,9 @@ try
         return $"Server={server};Port={port};Database={database};User={userId};Password={password};";
     }
 
+    // HttpClient for external APIs
+    builder.Services.AddHttpClient();
+
     // Services
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddScoped<EmailService>();

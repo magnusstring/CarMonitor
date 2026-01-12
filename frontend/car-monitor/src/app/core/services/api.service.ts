@@ -169,4 +169,17 @@ export class ApiService {
   deleteReminderType(id: number): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/remindertypes/${id}`);
   }
+
+  // Car Images
+  getCarImage(make: string, model: string, year?: number): Observable<CarImageResponse> {
+    const params: any = { make, model };
+    if (year) params.year = year.toString();
+    return this.http.get<CarImageResponse>(`${environment.apiUrl}/carimages`, { params });
+  }
+}
+
+export interface CarImageResponse {
+  imageUrl: string | null;
+  attribution: string | null;
+  photographerUrl: string | null;
 }

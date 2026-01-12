@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Vehicle, Reminder, CreateVehicleRequest, ReminderType, CreateReminderRequest } from '../../core/services/api.service';
+import { ApiService, Vehicle, Reminder, CreateVehicleRequest, ReminderType, CreateReminderRequest, CarImageResponse } from '../../core/services/api.service';
 import { ReminderIconComponent } from '../../shared/components/reminder-icon.component';
 import { forkJoin } from 'rxjs';
 
@@ -384,9 +384,14 @@ export class DashboardComponent implements OnInit {
 
   Math = Math;
 
-  // IMAGIN.studio API for car images (free key from JS Mastery)
-  private readonly CAR_IMAGE_API = 'https://cdn.imagin.studio/getimage';
-  private readonly CAR_IMAGE_KEY = 'hrjavascript-mastery';
+  private readonly FALLBACK_IMAGE = 'data:image/svg+xml,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" fill="none">
+      <rect width="200" height="120" fill="#1f2937"/>
+      <path d="M60 80h80M70 70h60M50 60c0-20 20-30 50-30s50 10 50 30" stroke="#4b5563" stroke-width="2" fill="none"/>
+      <circle cx="70" cy="80" r="10" stroke="#4b5563" stroke-width="2"/>
+      <circle cx="130" cy="80" r="10" stroke="#4b5563" stroke-width="2"/>
+    </svg>
+  `);
 
   ngOnInit() {
     this.loadData();
@@ -422,15 +427,27 @@ export class DashboardComponent implements OnInit {
           remindersByVehicle.set(r.vehicleId, list);
         });
 
-        // Create vehicles with reminders and images
+        // Create vehicles with reminders and placeholder images
         const vehiclesWithReminders: VehicleWithReminders[] = vehicles.map(v => ({
           ...v,
           reminders: (remindersByVehicle.get(v.id) || []).sort((a, b) => a.daysUntilDue - b.daysUntilDue),
           expanded: true,
-          imageUrl: this.getCarImageUrl(v.make, v.model, v.year, v.color)
+          imageUrl: this.FALLBACK_IMAGE
         }));
 
         this.vehicles.set(vehiclesWithReminders);
+
+        // Fetch images for each vehicle
+        vehiclesWithReminders.forEach(v => {
+          this.api.getCarImage(v.make, v.model, v.year).subscribe({
+            next: (response) => {
+              if (response.imageUrl) {
+                v.imageUrl = response.imageUrl;
+                this.vehicles.set([...this.vehicles()]);
+              }
+            }
+          });
+        });
         this.reminderTypes.set(types);
 
         if (types.length && !this.reminderForm.type) {
@@ -446,31 +463,9 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  getCarImageUrl(make: string, model: string, year: number, color?: string): string {
-    const params = new URLSearchParams({
-      customer: this.CAR_IMAGE_KEY,
-      make: make.toLowerCase(),
-      modelFamily: model.toLowerCase().split(' ')[0],
-      zoomType: 'fullscreen',
-      modelYear: year.toString(),
-      angle: '23'
-    });
-    if (color) {
-      params.set('paintId', color.toLowerCase());
-    }
-    return `${this.CAR_IMAGE_API}?${params.toString()}`;
-  }
-
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
-    img.src = 'data:image/svg+xml,' + encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" fill="none">
-        <rect width="200" height="120" fill="#1f2937"/>
-        <path d="M60 80h80M70 70h60M50 60c0-20 20-30 50-30s50 10 50 30" stroke="#4b5563" stroke-width="2" fill="none"/>
-        <circle cx="70" cy="80" r="10" stroke="#4b5563" stroke-width="2"/>
-        <circle cx="130" cy="80" r="10" stroke="#4b5563" stroke-width="2"/>
-      </svg>
-    `);
+    img.src = this.FALLBACK_IMAGE;
   }
 
   toggleVehicle(vehicle: VehicleWithReminders) {
