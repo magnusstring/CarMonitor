@@ -40,9 +40,21 @@ jobs:
         run: dotnet restore
         working-directory: backend/CarMonitor.Api
 
+      - name: Restore test dependencies
+        run: dotnet restore
+        working-directory: backend/CarMonitor.Tests
+
       - name: Build .NET app
         run: dotnet build --configuration Release --no-restore
         working-directory: backend/CarMonitor.Api
+
+      - name: Build tests
+        run: dotnet build --configuration Release --no-restore
+        working-directory: backend/CarMonitor.Tests
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+        working-directory: backend/CarMonitor.Tests
 
       - name: Publish .NET app
         run: dotnet publish --configuration Release --no-build --output ./publish
